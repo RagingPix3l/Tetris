@@ -1,0 +1,351 @@
+const W = 800;
+const H = 600;
+
+const LEFT = 37;
+const RIGHT = 39;
+const UP = 38;
+const SPACE = 32;
+
+winlisten("load", function (){start();});
+
+var clear = null;
+
+function Brick(o){
+    o = o || {};
+    GameObject.call(this,o);
+    this.color = o.color || "#000";
+    this.solid = o.solid || false;
+}
+
+_ = chain(Brick, GameObject);
+
+_.draw = function (g, ctx) {
+    var me = this;
+    const w = me.parent.brickW;
+    const h = me.parent.brickH;
+    ctx.fillStyle = me.color;
+    ctx.save();
+    if (me.parent.isGroup) {
+        ctx.translate(me.parent.pos.x, me.parent.pos.y);
+    }
+    if ( !me.parent.isGroup || me.solid){
+        ctx.fillRect(me.pos.x*(w+2),me.pos.y*(h+2) - me.parent.extraRows*(h+2),w,h);
+    }
+    ctx.restore();
+}
+
+
+function Grid (o) {
+    o = o || {};
+    var me = this;
+    GameObjectList.call(me,o);
+    me.extraRows = o.extraRows || 0;
+    me.W = o.W || W;
+    me.H = o.H || H;
+    me.rows = o.rows || 35;
+    me.cols = o.cols || 22;
+    me.brickW = (me.W - me.cols*2)/(me.cols);
+    me.brickH = (me.H - me.rows*2)/(me.rows);
+    me.rows += me.extraRows;
+    me.brickPattern = o.brickPattern || null;
+    me.isGroup = me.brickPattern != null;
+    var brickColor = o.brickColor || "#000";
+    var extraHeight = me.extraHeight = (me.brickH+2) * me.extraRows;
+    me.pos.y -= extraHeight;
+    me.H += extraHeight;
+
+    for (var i = 0, m=me.rows;i<m;++i){
+        for (var j = 0, n = me.cols; j<n; ++j){
+            var brick = me.add(new Brick({pos:new V2(j,i), color: brickColor}));
+            if (me.brickPattern){
+                brick.solid = me.brickPattern[i][j] == 1;
+                brick.color = brick.solid ? brickColor : "#000";
+            }
+        }
+    }
+
+}
+
+_ = chain(Grid, GameObjectList);
+
+_.draw = function (g, ctx) {
+    var me = this;
+    if (!me.isGroup){
+        ctx.fillStyle="#222";
+        ctx.fillRect(me.pos.x,me.pos.y,me.W,me.H);
+    }
+
+    GameObjectList.prototype.draw.call(me,g,ctx);
+};
+
+_.update = function (g) {
+    const me = this;
+    GameObjectList.prototype.update.call(me,g);
+    if (!me.isGroup){
+        return;
+    }
+    var bMerge = false;
+
+    if (g.mainGrid.shouldMerge(me)){
+        bMerge = true;
+    }
+
+    if (me.pos.y >= g.mainGrid.H - g.mainGrid.extraHeight - me.H){
+        bMerge = true;
+    }
+
+    if (bMerge) {
+        me.vel.y = 0;
+        g.mainGrid.merge(me);
+        g.root.remove(me);
+        g.group = g.root.add(g.mainGrid.spawnBrickGroup(g));
+    }
+};
+
+_.calculatePlacement = function (group) {
+  const me = this;
+  var row = group.pos.y / (me.brickH+2) + me.extraHeight/(me.brickH+2);
+  row = row >> 0;
+  var col = (group.pos.x / (me.brickW+2));
+  col = col >> 0;
+  return {row:row,
+            col: col};
+};
+
+_.shouldMerge = function (group) {
+    const me = this;
+    const pos = me.calculatePlacement(group);
+    const startRow = pos.row;
+    const startCol = pos.col;
+    for (var i = 0; i < group.rows; ++i){
+        for (var j = 0; j < group.cols; ++j) {
+            if (startRow+i+1 >= me.rows){
+                continue;
+            }
+            if (startCol+j >= me.cols){
+                continue;
+            }
+            const dstBrick = me.getAtXY(startRow + i + 1,startCol+j);
+            const srcBrick = group.getAtXY(i,j);
+            if (dstBrick.solid && srcBrick.solid){
+                return true;
+            }
+
+        }
+    }
+    return false;
+};
+
+_.merge = function (group) {
+    const me = this;
+    const pos = me.calculatePlacement(group);
+    const startRow = pos.row;
+    const startCol = pos.col;
+    for (var i = 0; i < group.rows; ++i){
+        for (var j = 0; j < group.cols; ++j) {
+            const dstBrick = me.getAtXY(startRow+i,startCol+j);
+            const srcBrick = group.getAtXY(i,j);
+            if (!dstBrick.solid){
+                dstBrick.color = srcBrick.color;
+                dstBrick.solid = srcBrick.solid;
+            }
+
+        }
+    }
+};
+
+_.getAtXY = function (row,col){
+    const me = this;
+    row = clamp(row,0,me.rows);
+    col = clamp(col,0,me.cols);
+    return me.getAtIndex(me.cols*row + col);
+};
+
+_.getAtIndex = function (index) {
+    return this.list[index];
+};
+
+_.spawnBrickGroup = function (g) {
+    var me = this;
+    var bricks = [
+        [   "11",
+            "11"
+        ],
+        [
+            "001",
+            "111"
+        ],
+        [
+            "100",
+            "111"
+        ],
+        [
+            "1111",
+        ],
+        [
+            "010",
+            "111"
+        ],
+        [
+            "110",
+            "011"
+        ],
+        [
+            "011",
+            "110"
+        ],
+    ];
+    var brickPattern = bricks[(bricks.length*rnd())>>0].concat([]);
+    var cols = brickPattern[0].split("").length;
+    var rows = brickPattern.length;
+    for (var i = 0; i<brickPattern.length;++i){
+        brickPattern[i] = brickPattern[i].split("");
+        for (var j = 0;j<brickPattern[i].length;++j){
+            brickPattern[i][j] = parseInt(brickPattern[i][j]);
+        }
+    }
+    var pattern = {
+        cols: cols,
+        rows: rows,
+        data: brickPattern,
+    };
+
+
+    var rotations = (rnd()*4)>>0;
+
+    var blockGroupGrid = new Grid({ W: pattern.cols*(me.brickW+2),
+                                    H: pattern.rows*(me.brickH+2),
+                                    cols: cols,
+                                    rows: rows,
+                                    brickColor: ["green","yellow","blue","orange"][(4*rnd())>>0],
+                                    brickPattern : pattern.data,
+    });
+
+    blockGroupGrid.rotate(rotations);
+    blockGroupGrid.vel.y = 3;
+    blockGroupGrid.pos.x = g.mainGrid.W*0.5;
+    if (me.shouldMerge(blockGroupGrid)){
+        me.isFull = true;
+    };
+    return blockGroupGrid;
+}
+
+_.rotate = function (n) {
+        if (n<=0){
+            return this;
+        }
+        var me = this;
+
+        var trows = me.cols;
+        var tcols = me.rows;
+
+        var tlist = [];
+
+        var index = 0;
+        var i = 0;
+        var j = 0;
+
+        var dstindexes = [];
+        index = 0;
+
+        for (i=0;i<tcols;++i){
+            for(j=trows-1;j>=0;--j){
+                dstindexes[i+j*tcols]=(index++);
+            }
+        }
+        index = 0;
+        for(j=0;j<trows;++j){
+            for (i=0;i<tcols;++i){
+                index = dstindexes[i+j*tcols];
+                var brick = me.getAtIndex(index);
+                brick.pos.x = i;
+                brick.pos.y = j;
+                tlist.push(brick);
+                index++;
+            }
+        }
+
+        me.list = tlist;
+        me.cols = tcols;
+        me.rows = trows;
+        me.updateSize();
+        return me.rotate(n-1);
+}
+
+_.updateSize = function () {
+    const me = this;
+    me.W = me.cols*(me.brickW+2);
+    me.H = me.rows*(me.brickH+2)
+};
+
+function Game (canvasOrcanvasId) {
+    var me = this;
+    me.canvas = typeof(canvasOrcanvasId) == "string" ? getById(canvasOrcanvasId) : canvasOrcanvasId;
+    var ctx = this.ctx = this.canvas.getContext('2d');
+    clear = function () { ctx.clearRect(0,0,W,H);};
+    me.root = new GameObjectList();
+    me.interval = -1;
+    me.paused = false;
+    me.mainGrid = me.root.add(new Grid({W:W*0.5,extraRows: 5}));
+    me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
+    me.mouse = new Mouse();
+    me.mouse.init(me.canvas);
+};
+
+_ = prot(Game);
+
+_.start = function () {
+    var me = this;
+    me.interval = setInterval(function () {
+        me.update();
+        me.draw();
+    }, 1000/50);
+};
+
+_.update = function () {
+    const me = this;
+    me.root.update(me);
+    if (me.mainGrid.isFull){
+        alert("gameover");
+        me.root.remove(me.mainGrid);
+        me.root.remove(me.group);
+        me.mainGrid = me.root.add(new Grid({W:W*0.5,extraRows: 5}));
+        me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
+    }
+
+    if (me.mouse.isDown){
+        me.mouse.isDown = false;
+        me.group.rotate(1);
+    }
+    const anchor =  (Math.round(me.group.pos.x/(me.group.brickW+2)))*(me.group.brickW+2);
+    const distX = me.mouse.pos.x - anchor - (me.group.W)*0.5;
+
+    if (Math.abs(distX) < (me.group.W)*0.5){
+        me.group.vel.x = 0;
+        me.group.pos.x = anchor;
+        return;
+    }
+    if (distX < 0){
+        me.group.vel.x = -6;
+    }else{
+        me.group.vel.x = 6;
+    }
+
+};
+
+_.draw = function () {
+    clear();
+    this.root.draw(this,this.ctx);
+};
+
+_.loop = function () {
+    var me = this;
+    me.update();
+    me.draw();
+}
+
+function start(){
+    var game = new Game('canvas');
+    game.start();
+};
+
