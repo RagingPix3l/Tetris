@@ -15,9 +15,17 @@ function Brick(o){
     GameObject.call(this,o);
     this.color = o.color || "#000";
     this.solid = o.solid || false;
+    this.scalep = rnd()*PI*2;
+    this.scale = 0.9 + cos(this.scalep)*0.1;
 }
 
 _ = chain(Brick, GameObject);
+
+_.update = function (g){
+    GameObject.prototype.update.call(this,g);
+    this.scalep += 0.07;
+    this.scale = 0.9 + cos(this.scalep)*0.1;
+}
 
 _.draw = function (g, ctx) {
     var me = this;
@@ -26,11 +34,15 @@ _.draw = function (g, ctx) {
     ctx.fillStyle = me.color;
     ctx.save();
     if (me.parent.isGroup) {
-        ctx.translate(me.parent.pos.x, me.parent.pos.y);
+        //ctx.translate(me.parent.pos.x, me.parent.pos.y);
     }
     if ( !me.parent.isGroup || me.solid){
-        ctx.fillRect(me.pos.x*(w+2),me.pos.y*(h+2) - me.parent.extraRows*(h+2),w,h);
+        var pos = me.parent.getChildAnchorPos(me);
+        ctx.translate(pos.x,pos.y);
+        ctx.scale(me.scale,me.scale);
+        ctx.fillRect(0,0,w,h);
     }
+
     ctx.restore();
 };
 
@@ -68,53 +80,44 @@ _.update = function (g) {
 };
 
 
-function Grid (o) {
+
+function BrickGrid (o) {
     o = o || {};
-    var me = this;
-    GameObjectList.call(me,o);
-    me.extraRows = o.extraRows || 0;
-    me.W = o.W || W;
-    me.H = o.H || H;
-    me.rows = o.rows || 35;//17;
-    me.cols = o.cols || 15;//11;
-    me.brickW = (me.W - me.cols*2)/(me.cols);
-    me.brickH = (me.H - me.rows*2)/(me.rows);
-    me.rows += me.extraRows;
+    const me = this;
+    GameObjectGrid.call(me,o);
     me.brickPattern = o.brickPattern || null;
     me.isGroup = me.brickPattern != null;
     var brickColor = o.brickColor || "#000";
-    var extraHeight = me.extraHeight = (me.brickH+2) * me.extraRows;
-    me.pos.y -= extraHeight;
-    me.H += extraHeight;
+    me.bgColor = o.bgColor || null;
 
     for (var i = 0, m=me.rows;i<m;++i){
         for (var j = 0, n = me.cols; j<n; ++j){
-            var brick = me.add(new Brick({pos:new V2(j,i), color: brickColor}));
+            var brick = me.add(new Brick({color: brickColor}));
             if (me.brickPattern){
                 brick.solid = me.brickPattern[i][j] == 1;
                 brick.color = brick.solid ? brickColor : "#000";
             }
         }
     }
-
 }
 
-_ = chain(Grid, GameObjectList);
+_ = chain(BrickGrid, GameObjectGrid);
 
 _.draw = function (g, ctx) {
     var me = this;
-    if (!me.isGroup){
-        ctx.fillStyle="#222";
+    if (me.bgColor){
+        ctx.fillStyle=me.bgColor;
         ctx.fillRect(me.pos.x,me.pos.y,me.W,me.H);
     }
 
-    GameObjectList.prototype.draw.call(me,g,ctx);
+    GameObjectGrid.prototype.draw.call(me,g,ctx);
 };
 
 _.update = function (g) {
     const me = this;
     var oldPos = me.pos.clone();
-    GameObjectList.prototype.update.call(me,g);
+    GameObjectGrid.prototype.update.call(me,g);
+    return;
 
     if (!me.isGroup){
         return;
@@ -266,16 +269,6 @@ _.checkFullLines = function (rows) {
     }
 }
 
-_.getAtXY = function (row,col){
-    const me = this;
-    row = clamp(row,0,me.rows);
-    col = clamp(col,0,me.cols);
-    return me.getAtIndex(me.cols*row + col);
-};
-
-_.getAtIndex = function (index) {
-    return this.list[index];
-};
 
 _.spawnBrickGroup = function (g) {
     var me = this;
@@ -329,7 +322,7 @@ _.spawnBrickGroup = function (g) {
                                     H: pattern.rows*(me.brickH+2),
                                     cols: cols,
                                     rows: rows,
-                                    brickColor: ["green","yellow","blue","orange"][(4*rnd())>>0],
+                                    brickColor: rndColor(),
                                     brickPattern : pattern.data,
     });
 
@@ -398,8 +391,9 @@ function Game (canvasOrcanvasId) {
     me.root = new GameObjectList();
     me.interval = -1;
     me.paused = false;
-    me.mainGrid = me.root.add(new Grid({W:W*0.3,extraRows: 5}));
-    me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
+    me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,bgColor: "rgb(45,165,128)",}));
+
+    //me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
     me.mouse = new Mouse();
     me.mouse.init(me.canvas);
 };
@@ -417,11 +411,11 @@ _.start = function () {
 _.update = function () {
     const me = this;
     me.root.update(me);
+    return;
     if (me.mainGrid.isFull){
-        alert("gameover");
         me.root.remove(me.mainGrid);
         me.root.remove(me.group);
-        me.mainGrid = me.root.add(new Grid({W:W*0.3,extraRows: 5}));
+        me.mainGrid = me.root.add(new Grid({W:W*0.5,extraRows: 5}));
         me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
     }
 
