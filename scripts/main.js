@@ -32,7 +32,40 @@ _.draw = function (g, ctx) {
         ctx.fillRect(me.pos.x*(w+2),me.pos.y*(h+2) - me.parent.extraRows*(h+2),w,h);
     }
     ctx.restore();
+};
+
+function BrickGhost(p){
+    var o = o || {};
+    GameObject.call(this, o);
+    this.alphaV = 0.95;
+    this.pos.x = p.pos.x * (p.parent.brickW+2);
+    this.pos.y = p.pos.y * (p.parent.brickH+2) - p.parent.extraRows*(p.parent.brickH+2);
+    this.w = p.parent.brickW;
+    this.h = p.parent.brickH;
+    this.color = p.color;
+    this.solid = p.solid;
 }
+
+_ = chain(BrickGhost, GameObject);
+
+_.draw = function (g,ctx) {
+    var me = this;
+    if (!me.solid){
+        return;
+    }
+    ctx.save();
+    ctx.globalAlpha = me.alpha;
+    ctx.fillStyle = me.color;
+    ctx.fillRect(me.pos.x,me.pos.y,me.w,me.h);
+    ctx.restore();
+};
+
+_.update = function (g) {
+    GameObject.prototype.update.call(this, g);
+    if (this.alpha < 0.01){
+        this.parent.remove(this);
+    }
+};
 
 
 function Grid (o) {
@@ -42,8 +75,8 @@ function Grid (o) {
     me.extraRows = o.extraRows || 0;
     me.W = o.W || W;
     me.H = o.H || H;
-    me.rows = o.rows || 35;
-    me.cols = o.cols || 22;
+    me.rows = o.rows || 35;//17;
+    me.cols = o.cols || 15;//11;
     me.brickW = (me.W - me.cols*2)/(me.cols);
     me.brickH = (me.H - me.rows*2)/(me.rows);
     me.rows += me.extraRows;
@@ -80,10 +113,18 @@ _.draw = function (g, ctx) {
 
 _.update = function (g) {
     const me = this;
+    var oldPos = me.pos.clone();
     GameObjectList.prototype.update.call(me,g);
+
     if (!me.isGroup){
         return;
     }
+
+    if (g.mainGrid.collidesAtSide(me) !== false){
+        me.pos.x = oldPos.x;
+    }
+
+    me.pos.x = clamp(me.pos.x, 0, g.mainGrid.W - me.W);
     var bMerge = false;
 
     if (g.mainGrid.shouldMerge(me)){
@@ -106,10 +147,45 @@ _.calculatePlacement = function (group) {
   const me = this;
   var row = group.pos.y / (me.brickH+2) + me.extraHeight/(me.brickH+2);
   row = row >> 0;
-  var col = (group.pos.x / (me.brickW+2));
+  var col = Math.ceil(group.pos.x / (me.brickW+2));
   col = col >> 0;
   return {row:row,
             col: col};
+};
+
+_.collidesAtSide = function (group) {
+    const me = this;
+    const pos = me.calculatePlacement(group);
+    const startRow = pos.row;
+    const startCol = pos.col;
+    var colsToCheck = [0,group.cols-1];
+    for (var i = 0; i < group.rows; ++i){
+        for (var k = 0; k < colsToCheck.length; ++k) {
+            var j = colsToCheck[k];
+
+            if (startCol + j - 1 <= 0){
+                continue;
+            }
+            const srcBrick = group.getAtXY(i,j);
+
+            var dstBrick = me.getAtXY(startRow + i,startCol + j - 1);
+
+            if (dstBrick.solid && srcBrick.solid){
+                return "left";
+            }
+
+            if (startCol + j + 1 >= me.cols){
+                continue;
+            }
+            var dstBrick = me.getAtXY(startRow + i,startCol + j + 1);
+
+            if (dstBrick.solid && srcBrick.solid){
+                return "right";
+            }
+
+        }
+    }
+    return false;
 };
 
 _.shouldMerge = function (group) {
@@ -141,7 +217,9 @@ _.merge = function (group) {
     const pos = me.calculatePlacement(group);
     const startRow = pos.row;
     const startCol = pos.col;
+    var rows = [];
     for (var i = 0; i < group.rows; ++i){
+        rows.push (startRow + i);
         for (var j = 0; j < group.cols; ++j) {
             const dstBrick = me.getAtXY(startRow+i,startCol+j);
             const srcBrick = group.getAtXY(i,j);
@@ -152,7 +230,41 @@ _.merge = function (group) {
 
         }
     }
+    me.checkFullLines(rows);
 };
+
+_.checkFullLines = function (rows) {
+    var me = this;
+    rows = rows.sort(function(a,b){
+        return a - b;
+    });
+    var removed = 0;
+    for (var i = 0; i<rows.length;++i){
+        var row = rows[i];
+        var isSolid = true;
+        for (var j = 0; j<me.cols;++j){
+            if (!me.getAtXY(row, j).solid){
+                isSolid = false;
+                break;
+            }
+        }
+        if (isSolid){
+            removed++;
+            for (var trow = row; trow>0;--trow){
+                for (var col = 0; col<me.cols;++col){
+                    var oBrick = me.getAtXY(trow,col);
+                    var mBrick = me.getAtXY(trow-1,col);
+                    if (trow == row){
+                        me.parent.add(new BrickGhost(oBrick));
+                    };
+                    oBrick.solid = mBrick.solid;
+                    oBrick.color = mBrick.color;
+
+                }
+            }
+        }
+    }
+}
 
 _.getAtXY = function (row,col){
     const me = this;
@@ -286,7 +398,7 @@ function Game (canvasOrcanvasId) {
     me.root = new GameObjectList();
     me.interval = -1;
     me.paused = false;
-    me.mainGrid = me.root.add(new Grid({W:W*0.5,extraRows: 5}));
+    me.mainGrid = me.root.add(new Grid({W:W*0.3,extraRows: 5}));
     me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
     me.mouse = new Mouse();
     me.mouse.init(me.canvas);
@@ -309,7 +421,7 @@ _.update = function () {
         alert("gameover");
         me.root.remove(me.mainGrid);
         me.root.remove(me.group);
-        me.mainGrid = me.root.add(new Grid({W:W*0.5,extraRows: 5}));
+        me.mainGrid = me.root.add(new Grid({W:W*0.3,extraRows: 5}));
         me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
     }
 

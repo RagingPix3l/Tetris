@@ -14,6 +14,7 @@ _ = prot(GameObject);
 _.update = function (g) {
     var me = this;
     me.pos.add(me.vel);
+    me.alpha*=me.alphaV;
     me.pos.x = clamp(me.pos.x,0-me.size,W+me.size);
     me.pos.y = clamp(me.pos.y,0-me.size,H+me.size);
 };
