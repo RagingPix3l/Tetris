@@ -19,7 +19,7 @@ _.keyStateChange = function (e, state) {
     const me = this;
     me.keys[e.code] = state;
     //console.log(e.code);
-    if (['ArrowLeft','ArrowRight','Space'].indexOf(e.code)<0){
+    if (['ArrowLeft','ArrowRight','ArrowUp', 'Space'].indexOf(e.code)<0){
         return;
     }
     e.preventDefault();

@@ -144,7 +144,6 @@ _.update = function (g) {
     }
 
     if (bMerge) {
-        console.log("!");
         me.vel.y = 0;
         g.mainGrid.merge(me);
         g.root.remove(me);
@@ -157,7 +156,12 @@ _.calculatePlacement = function (group) {
   const me = this;
   var row = group.pos.y / (me.brickH+2);
   row = row >> 0;
-  var col = Math.ceil(group.pos.x / (me.brickW+2));
+  var col = 0;
+  var x = group.pos.x;
+  while (x>me.padding){
+      col++;
+      x -= (me.brickW+me.padding)
+  }
   col = col >> 0;
   return {row:row,
             col: col};
@@ -334,7 +338,7 @@ _.spawnBrickGroup = function (g) {
     });
 
     blockGroupGrid.rotate(rotations);
-    blockGroupGrid.vel.y = 3;
+    blockGroupGrid.vel.y = 1.5;
     blockGroupGrid.pos.x = g.mainGrid.W*0.5;
 
     if (me.shouldMerge(blockGroupGrid)){
@@ -461,9 +465,13 @@ _.update = function () {
             me.group.pos.x = anchor;
         }
     }
-    if (me.keyboard.keys['Space']){
+    if (me.keyboard.keys['Space'] ||me.keyboard.keys['ArrowUp'] ){
         me.group.rotate(1);
-        me.keyboard.keys['Space'] = false;
+        me.keyboard.keys['Space'] = me.keyboard.keys['ArrowUp'] = false;
+    }
+    if (me.keyboard.keys['ArrowDown']){
+        me.group.vel.y*=2.5;
+        me.keyboard.keys['ArrowDown'] = false;
     }
 
 };
