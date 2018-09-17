@@ -446,7 +446,7 @@ _.update = function () {
     const anchor = me.calculateAnchor();
 
     if (me.group.vel.x == 0){
-        me.group.startPosX = anchor;
+        me.group.startPosX=anchor;
     }
 
     if (me.keyboard.keys['ArrowLeft'] || me.keyboard.keys['ArrowRight']){
