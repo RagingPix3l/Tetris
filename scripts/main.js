@@ -31,8 +31,10 @@ _.draw = function (g, ctx) {
     var me = this;
     const w = me.parent.brickW;
     const h = me.parent.brickH;
-    ctx.fillStyle = me.color;
+
     ctx.save();
+    ctx.fillStyle = me.color;
+    ctx.strokeStyle = me.color;
     if (me.parent.isGroup) {
         ctx.translate(me.parent.pos.x, me.parent.pos.y);
     }
@@ -41,7 +43,11 @@ _.draw = function (g, ctx) {
         pos.add(w*0.5,h*0.5);
         ctx.translate(pos.x,pos.y);
         ctx.scale(me.scale,me.scale);
-        ctx.fillRect(-w*0.5,-h*0.5,w,h);
+        if (!me.solid) {
+            ctx.strokeRect(-w * 0.5, -h * 0.5, w, h);
+        }else{
+            ctx.fillRect(-w * 0.5, -h * 0.5, w, h);
+        }
     }
 
     ctx.restore();
@@ -51,8 +57,7 @@ function BrickGhost(p){
     var o = o || {};
     GameObject.call(this, o);
     this.alphaV = 0.95;
-    this.pos.x = p.pos.x * (p.parent.brickW+2);
-    this.pos.y = p.pos.y * (p.parent.brickH+2) - p.parent.extraRows*(p.parent.brickH+2);
+    this.pos = p.parent.getChildAnchorPos(p);
     this.w = p.parent.brickW;
     this.h = p.parent.brickH;
     this.color = p.color;
@@ -144,6 +149,7 @@ _.update = function (g) {
         g.mainGrid.merge(me);
         g.root.remove(me);
         g.group = g.root.add(g.mainGrid.spawnBrickGroup(g));
+        g.group.pos.x = g.calculateAnchor();
     }
 };
 
@@ -330,6 +336,7 @@ _.spawnBrickGroup = function (g) {
     blockGroupGrid.rotate(rotations);
     blockGroupGrid.vel.y = 3;
     blockGroupGrid.pos.x = g.mainGrid.W*0.5;
+
     if (me.shouldMerge(blockGroupGrid)){
         me.isFull = true;
     };
@@ -392,11 +399,11 @@ function Game (canvasOrcanvasId) {
     me.root = new GameObjectList();
     me.interval = -1;
     me.paused = false;
-    me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,bgColor: "rgb(45,165,128)",}));
-
-    me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
+    me.init();
     me.mouse = new Mouse();
     me.mouse.init(me.canvas);
+    me.keyboard = new Keyboard();
+
 };
 
 _ = prot(Game);
@@ -409,33 +416,54 @@ _.start = function () {
     }, 1000/50);
 };
 
+_.init = function () {
+    var me = this;
+    me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,extraRows: 5,bgColor: "rgb(45,165,128)",}));
+    me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
+    me.group.pos.x = me.calculateAnchor();
+};
+
+_.reset = function () {
+    var me = this;
+    me.root.remove(me.mainGrid);
+    me.root.remove(me.group);
+    me.init();
+};
+
+_.calculateAnchor = function (){
+    var me = this;
+    return me.mainGrid.calculatePlacement(me.group).col*(me.mainGrid.brickW+me.mainGrid.padding);
+};
+
 _.update = function () {
     const me = this;
     me.root.update(me);
 
     if (me.mainGrid.isFull){
-        me.root.remove(me.mainGrid);
-        me.root.remove(me.group);
-        me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,extraRows: 5}));
-        me.group = me.root.add(me.mainGrid.spawnBrickGroup(me));
+        me.reset();
     }
 
-    if (me.mouse.isDown){
-        me.mouse.isDown = false;
-        me.group.rotate(1);
-    }
-    const anchor =  (Math.round(me.group.pos.x/(me.group.brickW+2)))*(me.group.brickW+2);
-    const distX = me.mouse.pos.x - anchor - (me.group.W)*0.5;
+    const anchor = me.calculateAnchor();
 
-    if (Math.abs(distX) < (me.group.W)*0.5){
-        me.group.vel.x = 0;
-        me.group.pos.x = anchor;
-        return;
+    if (me.group.vel.x == 0){
+        me.group.startPosX = anchor;
     }
-    if (distX < 0){
-        me.group.vel.x = -6;
+
+    if (me.keyboard.keys['ArrowLeft'] || me.keyboard.keys['ArrowRight']){
+        if (me.keyboard.keys['ArrowLeft']){
+            me.group.vel.x = -6;
+        }else{
+            me.group.vel.x = 6;
+        }
     }else{
-        me.group.vel.x = 6;
+        if (me.group.startPosX != anchor) {
+            me.group.vel.x = 0;
+            me.group.pos.x = anchor;
+        }
+    }
+    if (me.keyboard.keys['Space']){
+        me.group.rotate(1);
+        me.keyboard.keys['Space'] = false;
     }
 
 };
