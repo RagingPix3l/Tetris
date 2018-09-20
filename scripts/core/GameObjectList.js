@@ -21,7 +21,7 @@ _.each = function (fn) {
 
 _.update=function(g) {
     var me=this;
-    GameObject.prototype.update.call(me,g);
+    this.super.update.call(me,g);
     me.each(function (o){
         o.update(g);
     });

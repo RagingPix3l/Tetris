@@ -6,10 +6,11 @@ function prot(fn) { return fn.prototype; };
 function chain(t,p) {
     t.prototype = Object.create(prot(p));
     t.prototype.constructor = t;
+    t.prototype.super = prot(p);
     return prot(t);
 }
 
-function isundef(o){return typeof(o) == "undefined";}
+function isundef(o){ return typeof(o) == "undefined";}
 
 function wrapclamp (v,min,max){
     if (v<=min){
@@ -19,6 +20,7 @@ function wrapclamp (v,min,max){
     }
     return v;
 }
+
 function clamp (v,min,max){
     if (v<=min){
         v=min;
