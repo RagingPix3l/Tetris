@@ -364,9 +364,9 @@ _.start = function () {
 
 _.init = function () {
     var me = this;
+
     me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,bgColor: "#555",}));
     me.spawnNewGroup();
-
 };
 
 _.reset = function () {
