@@ -418,8 +418,14 @@ _.update = function () {
         me.group.vel.y = clamp(me.group.vel.y * 1.5, 0, 15);
     }
 
-    if (me.keyboard.keys['Space']){
-        me.keyboard.keys['Space'] = false;
+    if (me.keyboard.keys['Escape']){
+        me.keyboard.keys['Escape'] = false;
+        me.reset();
+        return;
+    }
+
+    if (me.keyboard.keys['Space'] || me.keyboard.keys['ArrowUp']){
+        me.keyboard.keys['Space'] = me.keyboard.keys['ArrowUp'] = false;
         me.group.rotate(1);
 
         if (!me.canBePlaced(0,0)){
@@ -438,9 +444,6 @@ _.update = function () {
             me.root.remove(me.group);
             me.spawnNewGroup();
         }
-        //me.updateGroupPos();
-
-
     }
     if (me.group.vel.x == 0){
         if (me.keyboard.keys['ArrowLeft']){
