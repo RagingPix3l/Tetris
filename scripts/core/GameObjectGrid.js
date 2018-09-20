@@ -7,8 +7,8 @@ function GameObjectGrid (o) {
     me.rows = o.rows || 25;//17;
     me.cols = o.cols || 15;//11;
     me.padding = o.padding || 2;
-    me.brickW = ((me.W - me.cols*me.padding)/(me.cols))>>0;
-    me.brickH = ((me.H - me.rows*me.padding)/(me.rows))>>0;
+    me.brickW = ((me.W - me.cols*me.padding)/(me.cols));
+    me.brickH = ((me.H - me.rows*me.padding)/(me.rows));
 }
 
 _ = chain (GameObjectGrid, GameObjectList);

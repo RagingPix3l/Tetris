@@ -113,7 +113,8 @@ _ = chain(BrickGrid, GameObjectGrid);
 _.draw = function (g, ctx) {
     var me = this;
     if (me.bgColor){
-        ctx.fillStyle=me.bgColor;
+        ctx.fillStyle=me.bgColor
+        ;
         ctx.fillRect(me.pos.x,me.pos.y,me.W,me.H);
     }
 
@@ -363,7 +364,7 @@ _.start = function () {
 
 _.init = function () {
     var me = this;
-    me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,bgColor: "rgb(45,165,128)",}));
+    me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,bgColor: "#555",}));
     me.spawnNewGroup();
 
 };
