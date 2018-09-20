@@ -18,7 +18,7 @@ _.add = function (o) {
 
     const row = (me.size/me.cols) >> 0;
     const col = me.size - me.cols*row;
-    const added = this.super.add.call(me,o);
+    const added = GameObjectList.prototype.add.call(me,o);
 
     added.row = row;
     added.col = col;

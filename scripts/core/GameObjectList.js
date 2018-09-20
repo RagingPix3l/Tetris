@@ -6,7 +6,7 @@ function GameObjectList (o) {
 
 _ = chain(GameObjectList, GameObject);
 
-Object.defineProperty(_, 'size', {get:function(){return this.getLength();}});
+Object.defineProperty(_, 'size', { get:function(){return this.getLength();}});
 
 _.getLength = function () {
     return this.list.length;
@@ -21,7 +21,7 @@ _.each = function (fn) {
 
 _.update=function(g) {
     var me=this;
-    this.super.update.call(me,g);
+    GameObject.prototype.update.call(me,g);
     me.each(function (o){
         o.update(g);
     });
