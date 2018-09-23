@@ -36,7 +36,7 @@ _.init = function () {
     me.mainGrid = me.root.add(new BrickGrid({W:W*0.5,bgColor: "#555",}));
     me.spawnPreview();
     me.spawnNewGroup();
-
+    me.lastMoveHorizontal = Date.now();
 };
 
 _.spawnPreview = function () {
@@ -91,10 +91,17 @@ _.spawnNewGroup = function () {
         me.group.vel.y = (me.targetPosition.y - me.group.pos.y)/20;
     }
 }
-_.updateGroupPos = function (group){
+_.updateGroupPos = function (group,row,col){
     const me = this;
-    group.pos.x = group.lastGridPos.col*(me.mainGrid.brickW+me.mainGrid.padding);
-    group.pos.y = group.lastGridPos.row*(me.mainGrid.brickH+me.mainGrid.padding);
+    if (isundef(row)){ row = true; }
+    if (isundef(col)){ col = true; }
+    if (col) {
+        group.pos.x = group.lastGridPos.col*(me.mainGrid.brickW+me.mainGrid.padding);
+    }
+    if (row){
+        group.pos.y = group.lastGridPos.row*(me.mainGrid.brickH+me.mainGrid.padding);
+    }
+
 };
 
 _.pressed = function (keys) {
@@ -122,9 +129,11 @@ _.justPressed = function (keys){
 
 _.update = function () {
     const me = this;
+    me.time = Date.now();
     me.root.update(me);
 
-    if (me.pressed(['ArrowDown', 'KeyS'])){
+    if (me.pressed(['ArrowDown', 'KeyS'])&&(isundef(me.lastAccelerated) || me.lastAccelerated == me.group)){
+        me.lastAccelerated = me.group;
         me.group.vel.y = clamp(me.group.vel.y * 1.5, 0, 15);
     }
 
@@ -133,18 +142,24 @@ _.update = function () {
         return;
     }
 
-    if (me.group.vel.x == 0 && me.justPressed(['Space','ArrowUp', 'KeyW'])){
+    if (me.group.vel.x == 0 && me.justPressed(['ArrowUp', 'KeyW'])){
         me.group.rotate(1);
 
         if (!me.canBePlaced(0,0)){
             me.group.rotate(3);
         }else{
-            me.group.rotate(3);
-            me.group.each(function (o){
-                o.startFadeOut();
-            });
+
         }
     }
+
+    if (me.group.vel.x == 0 && me.justPressed('Space')) {
+        while (me.canBePlaced(1,0)){
+            me.group.lastGridPos.row++;
+        }
+        me.updateGroupPos(me.group);
+    }
+
+
 
     if (me.group.pos.y >= me.targetPosition.y){
         me.group.pos.y = me.targetPosition.y;
@@ -157,39 +172,33 @@ _.update = function () {
             me.spawnNewGroup();
         }
     }
-    if (me.group.vel.x == 0){
-        if (me.pressed(['ArrowLeft', 'KeyA'])){
-            if (me.canBePlaced(1,-1)){
-                me.targetPosition.x = (me.group.lastGridPos.col-(me.canBePlaced(1,-1)?1:0)) * (me.mainGrid.brickW+me.mainGrid.padding)
-                me.group.vel.x = (me.targetPosition.x - me.group.pos.x)/10;
+    if (me.time - me.lastMoveHorizontal  > 90) {
+        if (me.pressed(['ArrowLeft', 'KeyA'])) {
+            if (me.canBePlaced(1, -1)) {
+                me.group.lastGridPos.col--;
+                me.updateGroupPos(me.group, false, true);
+                me.lastMoveHorizontal = me.time;
             }
-        }else if (me.pressed(['ArrowRight', 'KeyD'])) {
+        } else if (me.pressed(['ArrowRight', 'KeyD'])) {
             if (me.canBePlaced(1, 1)) {
-                me.targetPosition.x = (me.group.lastGridPos.col + (me.canBePlaced(1, 1) ? 1 : 0)) * (me.mainGrid.brickW + me.mainGrid.padding)
-                me.group.vel.x = (me.targetPosition.x - me.group.pos.x) / 10;
-            }
-        }
-    }else{
-        if (me.group.vel.x < 0){
-            if (me.group.pos.x <= me.targetPosition.x){
-                me.group.vel.x = 0;
-                me.group.lastGridPos.col --;
-                me.group.pos.x = me.targetPosition.x;
-            }
-        }else if (me.group.vel.x > 0){
-            if (me.group.pos.x >= me.targetPosition.x){
-                me.group.vel.x = 0;
-                me.group.lastGridPos.col ++;
-                me.group.pos.x = me.targetPosition.x;
+                me.group.lastGridPos.col++;
+                me.updateGroupPos(me.group, false, true);
+                me.lastMoveHorizontal = me.time;
             }
         }
     }
+
+
     if (me.shadow){
         me.root.remove(me.shadow);
     }
     var shadow = me.group.clone();
     shadow.lastGridPos = {row:me.group.lastGridPos.row, col:me.group.lastGridPos.col};
-
+    if (me.group.vel.x < 0){
+        shadow.lastGridPos.col--;
+    }else if (me.group.vel.x > 0){
+        shadow.lastGridPos.col++;
+    }
     while (me.canBePlaced(1,0,shadow)){
         shadow.lastGridPos.row++;
     }
