@@ -24,7 +24,7 @@ _.update = function (g) {
     me.alpha*=me.alphaV;
     me.angle+=me.angleV;
     me.pos.x = clamp(me.pos.x,0-me.size,W+me.size);
-    me.pos.y = clamp(me.pos.y,0-me.size,H+me.size);
+    //me.pos.y = clamp(me.pos.y,0-me.size,H+me.size);
     for (var i = 0, n = me.updates.length; i<n; ++i){
         me.updates[i].call(me, g);
     }

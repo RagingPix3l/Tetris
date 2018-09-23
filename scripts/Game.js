@@ -4,13 +4,9 @@ function Game (canvasOrcanvasId) {
     var me = this;
     me.lvl = 1;
     me.linesCompleted = 0;
-    me.speedByLvl = [1];
-    me.linesByLvl = [12]
+    me.speedByLvl = [/*00*/	48, /*01*/	43, /*02*/	38, /*03*/33, /*04*/ 28, /*05*/	23,/*06*/ 18, /*07*/ 13, /*08*/	8, /*09*/ 6, /*10*/ 5, /*11*/ 5 , /*12*/ 5, /*13*/ 4, /*14*/ 4, /*15*/ 4, /*16*/ 4, /*17*/ 4, /*18*/ 4, /*19*/ 2, 2 ,2 ,2, 2, 2, 2 ,2, 2, 1];
 
-    for (var lvl = 1; lvl <= 10; ++lvl){
-        me.linesByLvl[lvl] = lvl*12;
-        me.speedByLvl[lvl] = me.speedByLvl[lvl-1]+0.7;
-    };
+    me.linesByLvl = 10;
 
     me.canvas = typeof(canvasOrcanvasId) == "string" ? getById(canvasOrcanvasId) : canvasOrcanvasId;
     var ctx = this.ctx = this.canvas.getContext('2d');
@@ -30,7 +26,7 @@ function Game (canvasOrcanvasId) {
     });
     me.linesLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 250)}));
     me.linesLbl.addUpdateFn(function (g){
-        this.txt = "Lines: " + g.linesCompleted + " / " + g.linesByLvl[g.lvl];
+        this.txt = "Lines: " + g.linesCompleted + " / " + me.linesToGo();
     });
 
     me.lvlLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 280)}));
@@ -40,17 +36,19 @@ function Game (canvasOrcanvasId) {
 
     me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 140), txt:"Next:"}))
     me.showGhost = true;
+    me.startLvl = 1;
 
 };
 
 _ = prot(Game);
+
 
 _.start = function () {
     var me = this;
     me.interval = setInterval(function () {
         me.update();
         me.draw();
-    }, 1000/ 50);
+    }, 1000/ 60);
 };
 
 _.init = function () {
@@ -60,6 +58,10 @@ _.init = function () {
     me.spawnPreview();
     me.spawnNewGroup();
     me.lastMoveHorizontal = Date.now();
+};
+
+_.linesToCompleteOnStart = function (startLevel){
+    return Math.min( (startLevel * 10 + 10) , Math.max(100, (startLevel * 10 - 50)));
 };
 
 _.spawnPreview = function () {
@@ -91,11 +93,16 @@ _.canBePlaced = function (row,col,group){
     return me.group.canBePlaced(groupToCheck,me.mainGrid,groupToCheck.lastGridPos.row +row,groupToCheck.lastGridPos.col + col);
 };
 
+_.linesToGo = function (){
+    const me = this;
+    return me.lvl == me.startLvl ? me.linesToCompleteOnStart(me.startLvl) : 10;
+};
+
 _.insert = function () {
     const me = this;
     var merged = me.mainGrid.merge(me.group,me.gridOffscreen);
     me.linesCompleted+=merged;
-    if (me.linesCompleted>=me.linesByLvl[me.lvl]){
+    if (me.linesCompleted>= me.linesToGo()){
         me.lvl++;
         me.linesCompleted = 0;
     }
@@ -115,13 +122,21 @@ _.spawnNewGroup = function () {
     }else{
         me.group.lastGridPos = groupStartPos;
         me.updateGroupPos(me.group);
+
         me.targetPosition = {
             x: me.group.pos.x,
             y: me.group.pos.y +(me.mainGrid.brickH+me.mainGrid.padding)
         };
-        me.group.vel.y = me.speedByLvl[me.lvl];
+        me.group.vel.y = me.calculateSpeed();
     }
 }
+
+_.calculateSpeed = function () {
+    const me = this;
+    const frames = me.speedByLvl[me.lvl - 1];
+    return (me.group.brickH/(frames));
+}
+
 _.updateGroupPos = function (group,row,col){
     const me = this;
     if (isundef(row)){ row = true; }
@@ -132,7 +147,6 @@ _.updateGroupPos = function (group,row,col){
     if (row){
         group.pos.y = group.lastGridPos.row*(me.mainGrid.brickH+me.mainGrid.padding);
     }
-
 };
 
 _.pressed = function (keys) {
@@ -161,19 +175,31 @@ _.justPressed = function (keys){
 _.update = function () {
     const me = this;
     me.time = Date.now();
+
+    if (me.justPressed('KeyP')){
+        me.paused = !me.paused;
+        return;
+    }
+    
+    if (me.paused){
+        return;
+    }
     me.root.update(me);
 
     if (me.pressed(['ArrowDown', 'KeyS'])&&(isundef(me.lastAccelerated) || me.lastAccelerated == me.group)){
         me.lastAccelerated = me.group;
         me.group.vel.y = (me.group.brickH + me.group.padding)/2;
     }else{
-        me.group.vel.y = me.speedByLvl[me.lvl];
+        me.group.vel.y = me.calculateSpeed();
     }
 
     if (me.justPressed('Escape')){
         me.reset();
         return;
     }
+
+
+
 
     if (me.group.vel.x == 0 && me.justPressed(['ArrowUp', 'KeyW'])){
         me.group.rotate(1);

@@ -56,7 +56,7 @@ _.draw = function (g, ctx) {
 
 _.calculatePlacement = function (group) {
     const me = this;
-    var row = group.pos.y / (me.brickH+2);
+    var row = group.pos.y / (me.brickH+me.padding);
     row = row >> 0;
     var col = 0;
     var x = group.pos.x;
@@ -248,7 +248,7 @@ _.updateSize = function () {
 
 _.calculateGroupStartingPosition = function (group,gridOffscreen) {
     var me = this;
-    var row = 0;
+    var row = 0 - group.rows + 1;
     var col = (me.cols>>1) - (group.cols>>1);
     return me.canBePlaced(group,gridOffscreen,row,col) ? {row:row, col:col} : false;
 };
@@ -256,26 +256,35 @@ _.calculateGroupStartingPosition = function (group,gridOffscreen) {
 _.canBePlaced = function (group,gridOffscreen,row,col) {
     var me = this;
 
-    if (row>=gridOffscreen.rows || row<0){
+    if (row>=gridOffscreen.rows /*|| row<0*/){
         return false;
     }
     if (col>=gridOffscreen.cols || col<0){
         return false;
     }
-
+    var r = true;
     for (var i = group.rows - 1; i>=0;--i){
         for (var j = group.cols - 1; j>=0; --j){
-            if (row + i>=gridOffscreen.rows || row +i <0){
-                return false;
+            if (row + i>=gridOffscreen.rows /*|| row +i <0*/){
+                r = false;
+                break;
             }
             if (col+j>=gridOffscreen.cols || col+j<0){
-                return false;
+                r = false;
+                break;
             }
-            if (gridOffscreen.getAtXY(i+row,j + col).solid && group.getAtXY(i,j).solid){
-                return false;
+            if (i + row >= 0 && i + row < gridOffscreen.rows) {
+                if (gridOffscreen.getAtXY(i + row, j + col).solid && group.getAtXY(i, j).solid) {
+                    r = false;
+                    break;
+                }
             }
         }
+        if (!isundef(r) && r ==false ) {
+            break;
+        }
     }
-    return true;
+
+    return r;
 };
 
