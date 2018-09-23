@@ -2,8 +2,19 @@
 
 function Game (canvasOrcanvasId) {
     var me = this;
+    me.lvl = 1;
+    me.linesCompleted = 0;
+    me.speedByLvl = [1];
+    me.linesByLvl = [12]
+
+    for (var lvl = 1; lvl <= 10; ++lvl){
+        me.linesByLvl[lvl] = lvl*12;
+        me.speedByLvl[lvl] = me.speedByLvl[lvl-1]+1;
+    };
+
     me.canvas = typeof(canvasOrcanvasId) == "string" ? getById(canvasOrcanvasId) : canvasOrcanvasId;
     var ctx = this.ctx = this.canvas.getContext('2d');
+
     clear = function () { ctx.clearRect(0,0,W,H);};
     me.root = new GameObjectList();
     me.interval = -1;
@@ -14,10 +25,22 @@ function Game (canvasOrcanvasId) {
     me.keyboard = new Keyboard();
     me.score = 0;
     me.scoreLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 50)}));
-    me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 140), txt:"Next:"}))
     me.scoreLbl.addUpdateFn(function (g){
         this.txt = "Score: " + g.score;
     });
+    me.linesLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 250)}));
+    me.linesLbl.addUpdateFn(function (g){
+        this.txt = "Lines: " + g.linesCompleted + " / " + g.linesByLvl[g.lvl];
+    });
+
+    me.lvlLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 280)}));
+    me.lvlLbl.addUpdateFn(function (g){
+        this.txt = "Lvl: " + g.lvl;
+    });
+
+    me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 140), txt:"Next:"}))
+    me.showGhost = true;
+
 };
 
 _ = prot(Game);
@@ -53,6 +76,8 @@ _.spawnPreview = function () {
 _.reset = function () {
     var me = this;
     me.score = 0;
+    me.lvl = 1;
+    me.linesCompleted = 0;
     me.root.remove(me.mainGrid);
     me.root.remove(me.group);
     me.root.remove(me.groupPreview);
@@ -69,6 +94,11 @@ _.canBePlaced = function (row,col,group){
 _.insert = function () {
     const me = this;
     var merged = me.mainGrid.merge(me.group,me.gridOffscreen);
+    me.linesCompleted+=merged;
+    if (me.linesCompleted>=me.linesByLvl[me.lvl]){
+        me.lvl++;
+    }
+    delete me.lastAccelerated;
     me.score += merged * 25 + 1;
 };
 
@@ -88,7 +118,7 @@ _.spawnNewGroup = function () {
             x: me.group.pos.x,
             y: me.group.pos.y +(me.mainGrid.brickH+me.mainGrid.padding)
         };
-        me.group.vel.y = (me.targetPosition.y - me.group.pos.y)/20;
+        me.group.vel.y = me.speedByLvl[me.lvl];
     }
 }
 _.updateGroupPos = function (group,row,col){
@@ -134,7 +164,9 @@ _.update = function () {
 
     if (me.pressed(['ArrowDown', 'KeyS'])&&(isundef(me.lastAccelerated) || me.lastAccelerated == me.group)){
         me.lastAccelerated = me.group;
-        me.group.vel.y = clamp(me.group.vel.y * 1.5, 0, 15);
+        me.group.vel.y = (me.group.brickH + me.group.padding)/3;
+    }else{
+        me.group.vel.y = me.speedByLvl[me.lvl];
     }
 
     if (me.justPressed('Escape')){
@@ -192,21 +224,28 @@ _.update = function () {
     if (me.shadow){
         me.root.remove(me.shadow);
     }
-    var shadow = me.group.clone();
-    shadow.lastGridPos = {row:me.group.lastGridPos.row, col:me.group.lastGridPos.col};
-    if (me.group.vel.x < 0){
-        shadow.lastGridPos.col--;
-    }else if (me.group.vel.x > 0){
-        shadow.lastGridPos.col++;
+
+    if (me.justPressed('KeyG')){
+        me.showGhost = !me.showGhost;
     }
-    while (me.canBePlaced(1,0,shadow)){
-        shadow.lastGridPos.row++;
+
+    if (me.showGhost) {
+        var shadow = me.group.clone();
+        shadow.lastGridPos = {row: me.group.lastGridPos.row, col: me.group.lastGridPos.col};
+        if (me.group.vel.x < 0) {
+            shadow.lastGridPos.col--;
+        } else if (me.group.vel.x > 0) {
+            shadow.lastGridPos.col++;
+        }
+        while (me.canBePlaced(1, 0, shadow)) {
+            shadow.lastGridPos.row++;
+        }
+        me.updateGroupPos(shadow);
+        me.shadow = me.root.add(shadow);
+        me.shadow.each(function (o) {
+            o.alpha = 0.15;
+        });
     }
-    me.updateGroupPos(shadow);
-    me.shadow = me.root.add(shadow);
-    me.shadow.each(function(o){
-       o.alpha = 0.15;
-    });
 
 };
 

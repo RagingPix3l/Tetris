@@ -4,8 +4,8 @@ function GameObjectGrid (o) {
     GameObjectList.call(me,o);
     me.W = o.W || W;
     me.H = o.H || H;
-    me.rows = o.rows || 25;//17;
-    me.cols = o.cols || 15;//11;
+    me.rows = o.rows || 20;//17;
+    me.cols = o.cols || 10;//11;
     me.padding = o.padding || 2;
     me.brickW = ((me.W - me.cols*me.padding)/(me.cols));
     me.brickH = ((me.H - me.rows*me.padding)/(me.rows));

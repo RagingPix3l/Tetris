@@ -155,7 +155,17 @@ _.spawnBrickGroup = function (g) {
             "110"
         ],
     ];
-    var brickPattern = bricks[(bricks.length*rnd())>>0].concat([]);
+    var colors = [
+        "#00ffff",
+        "#ffff00",
+        "#ff00ff",
+        "#ff0000",
+        "#999999",
+        "#00ff00",
+        "#0000ff",
+    ];
+    const index = (bricks.length*rnd())>>0;
+    var brickPattern = bricks[index].concat([]);
     var cols = brickPattern[0].split("").length;
     var rows = brickPattern.length;
     for (var i = 0; i<brickPattern.length;++i){
@@ -177,12 +187,12 @@ _.spawnBrickGroup = function (g) {
         H: pattern.rows*(me.brickH+2),
         cols: cols,
         rows: rows,
-        brickColor: rndColor(),
+        brickColor: colors[index],
         brickPattern : pattern.data,
     });
 
     blockGroupGrid.rotate(rotations);
-    blockGroupGrid.vel.y = 1.5;
+
     blockGroupGrid.pos.x = g.mainGrid.W*0.5;
 
     return blockGroupGrid;
