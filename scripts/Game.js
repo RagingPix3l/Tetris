@@ -97,6 +97,7 @@ _.insert = function () {
     me.linesCompleted+=merged;
     if (me.linesCompleted>=me.linesByLvl[me.lvl]){
         me.lvl++;
+        me.linesCompleted = 0;
     }
     delete me.lastAccelerated;
     me.score += merged * 25 + 1;
