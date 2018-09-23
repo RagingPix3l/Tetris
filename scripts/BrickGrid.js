@@ -21,12 +21,34 @@ function BrickGrid (o) {
 
 _ = chain(BrickGrid, GameObjectGrid);
 
+_.clone = function (){
+    var r =  new BrickGrid();
+    var me = this;
+    r.cols = me.cols;
+    r.rows = me.rows;
+    r.isGroup = me.isGroup;
+    r.bgColor = me.bgColor;
+    r.W = me.W;
+    r.H = me.H;
+    r.brickW = me.brickW;
+    r.brickH = me.brickH;
+
+    for (var i = 0; i < me.size; ++i){
+        r.list[i] = me.list[i].clone();
+        r.list[i].parent = r;
+    }
+
+    return r;
+};
+
 _.draw = function (g, ctx) {
     var me = this;
     if (me.bgColor){
-        ctx.fillStyle=me.bgColor
-        ;
+        ctx.fillStyle=me.bgColor;
+        ctx.save();
+        ctx.globalAlpha = 0.3;
         ctx.fillRect(me.pos.x,me.pos.y,me.W,me.H);
+        ctx.restore();
     }
 
     GameObjectGrid.prototype.draw.call(me,g,ctx);
@@ -65,7 +87,7 @@ _.merge = function (group,offscreenGrid) {
 
         }
     }
-    me.checkFullLines(rows,offscreenGrid);
+    return me.checkFullLines(rows,offscreenGrid);
 };
 
 _.checkFullLines = function (rows) {
@@ -99,7 +121,8 @@ _.checkFullLines = function (rows) {
             }
         }
     }
-}
+    return removed;
+};
 
 
 _.spawnBrickGroup = function (g) {
@@ -209,8 +232,8 @@ _.rotate = function (n) {
 
 _.updateSize = function () {
     const me = this;
-    me.W = me.cols*(me.brickW+2);
-    me.H = me.rows*(me.brickH+2)
+    me.W = me.cols*(me.brickW+me.padding);
+    me.H = me.rows*(me.brickH+me.padding);
 };
 
 _.calculateGroupStartingPosition = function (group,gridOffscreen) {
