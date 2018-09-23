@@ -9,7 +9,7 @@ function Game (canvasOrcanvasId) {
 
     for (var lvl = 1; lvl <= 10; ++lvl){
         me.linesByLvl[lvl] = lvl*12;
-        me.speedByLvl[lvl] = me.speedByLvl[lvl-1]+1;
+        me.speedByLvl[lvl] = me.speedByLvl[lvl-1]+0.7;
     };
 
     me.canvas = typeof(canvasOrcanvasId) == "string" ? getById(canvasOrcanvasId) : canvasOrcanvasId;
@@ -165,7 +165,7 @@ _.update = function () {
 
     if (me.pressed(['ArrowDown', 'KeyS'])&&(isundef(me.lastAccelerated) || me.lastAccelerated == me.group)){
         me.lastAccelerated = me.group;
-        me.group.vel.y = (me.group.brickH + me.group.padding)/3;
+        me.group.vel.y = (me.group.brickH + me.group.padding)/2;
     }else{
         me.group.vel.y = me.speedByLvl[me.lvl];
     }
