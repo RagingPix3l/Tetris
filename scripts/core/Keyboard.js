@@ -19,9 +19,9 @@ _.keyStateChange = function (e, state) {
     const me = this;
     me.keys[e.code] = state;
     //console.log(e.code);
-    if (['ArrowLeft','ArrowRight','ArrowUp', 'Space'].indexOf(e.code)<0){
+    if (['ArrowLeft','ArrowRight','ArrowUp', 'ArrowDown', 'KeyP', 'KeyG', 'Space'].indexOf(e.code)<0){
         return;
     }
     e.preventDefault();
     e.defaultPrevented = true;
-}
+};
