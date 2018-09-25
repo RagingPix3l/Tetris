@@ -173,7 +173,6 @@ _.handleInput = function (game) {
         game.mouse.isDown = false;
         var i = 0;
         me.brickParts.each(function(o){
-
             o.targetPos.y -= 440;
             o.delay = i * 5;
             o.done = false;
