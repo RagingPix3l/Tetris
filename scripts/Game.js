@@ -169,7 +169,7 @@ _.getBricksByColor = function (grid) {
 _.handleInput = function (game) {
     const me = this;
     State.prototype.handleInput.call(me,game);
-    if (false && game.mouse.isDown){
+    if (game.mouse.isDown){
         game.mouse.isDown = false;
         var i = 0;
         me.brickParts.each(function(o){
