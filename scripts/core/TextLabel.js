@@ -5,12 +5,16 @@ function TextLabel (o){
     this.fontSize = o.fontSize || 32;
     this.color = o.color || "#fff";
     this.txt= o.txt || "";
+    this.visible = true;
 }
 
 _ = chain (TextLabel, GameObject);
 
 _.draw = function (g, ctx){
     var me = this;
+    if (me.visible == false){
+        return;
+    }
     ctx.font = me.fontSize + "px " + me.font;
     ctx.fillStyle = me.color;
     ctx.fillText(me.txt, me.pos.x, me.pos.y);

@@ -50,9 +50,9 @@ _.draw = function (g, ctx) {
     ctx.save();
     ctx.fillStyle = me.color;
     ctx.strokeStyle = me.color;
-    if (me.parent.isGroup) {
-        ctx.translate(me.parent.pos.x, me.parent.pos.y);
-    }
+
+    ctx.translate(me.parent.pos.x, me.parent.pos.y);
+
     if ( !me.parent.isGroup || me.solid){
         var pos = me.parent.getChildAnchorPos(me);
         pos.add(w*0.5,h*0.5);
