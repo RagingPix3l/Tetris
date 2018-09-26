@@ -28,7 +28,7 @@ _.create = function () {
     if (me.created) { return; }
     me.bricks = JSON.parse("{\"#b1855e\":[{\"row\":3,\"col\":4},{\"row\":3,\"col\":5},{\"row\":3,\"col\":6}],\"#3e2488\":[{\"row\":3,\"col\":8},{\"row\":4,\"col\":8},{\"row\":5,\"col\":8},{\"row\":6,\"col\":8},{\"row\":7,\"col\":8}],\"#9eb2d9\":[{\"row\":3,\"col\":9},{\"row\":3,\"col\":10}],\"#18923a\":[{\"row\":3,\"col\":12},{\"row\":3,\"col\":13},{\"row\":3,\"col\":14}],\"#46e8c0\":[{\"row\":3,\"col\":16},{\"row\":4,\"col\":16},{\"row\":5,\"col\":16},{\"row\":6,\"col\":16},{\"row\":7,\"col\":16}],\"#d65bb0\":[{\"row\":3,\"col\":17},{\"row\":3,\"col\":18}],\"#2a3396\":[{\"row\":3,\"col\":20},{\"row\":4,\"col\":20},{\"row\":5,\"col\":20},{\"row\":6,\"col\":20},{\"row\":7,\"col\":20}],\"#bd1b91\":[{\"row\":3,\"col\":22},{\"row\":3,\"col\":23},{\"row\":3,\"col\":24}],\"#88e12f\":[{\"row\":4,\"col\":5},{\"row\":5,\"col\":5},{\"row\":6,\"col\":5},{\"row\":7,\"col\":5}],\"#b0c2cc\":[{\"row\":4,\"col\":13},{\"row\":5,\"col\":13},{\"row\":6,\"col\":13},{\"row\":7,\"col\":13}],\"#043656\":[{\"row\":4,\"col\":18},{\"row\":5,\"col\":18}],\"#8204a8\":[{\"row\":4,\"col\":22}],\"#d6ab46\":[{\"row\":5,\"col\":9},{\"row\":5,\"col\":10}],\"#4a3a1a\":[{\"row\":5,\"col\":22},{\"row\":5,\"col\":23},{\"row\":5,\"col\":24}],\"#366615\":[{\"row\":6,\"col\":17},{\"row\":7,\"col\":18}],\"#a38174\":[{\"row\":6,\"col\":24}],\"#4383be\":[{\"row\":7,\"col\":9},{\"row\":7,\"col\":10}],\"#285f85\":[{\"row\":7,\"col\":22},{\"row\":7,\"col\":23},{\"row\":7,\"col\":24}]}");
     State.prototype.create.call(me);
-    var title = me.add(new TextLabel({txt: "click to continue"}));
+    var title = me.title = me.add(new TextLabel({txt: "click to continue"}));
     title.pos.y = H*0.6 + H*0.25;
     title.pos.x = H*0.5 - title.txt.length * 5;
     me.grid = me.add(new BrickGrid({W:W, H:H*0.5, brickColor:"#777", cols:29, rows:11}));
@@ -169,6 +169,7 @@ _.getBricksByColor = function (grid) {
 _.handleInput = function (game) {
     const me = this;
     State.prototype.handleInput.call(me,game);
+
     if (game.mouse.isDown){
         game.mouse.isDown = false;
         var i = 0;
@@ -180,7 +181,11 @@ _.handleInput = function (game) {
         });
         setTimeout(function () {
             game.goToState('play');
-        }, 1200);
+        }, 1400);
+        setTimeout(function () {
+            me.grid.vel.y = -25;
+            me.title.vel.y = 10;
+        }, 600);
     }
     /*
     if (game.mouse.isDown){

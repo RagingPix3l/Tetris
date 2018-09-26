@@ -43,6 +43,11 @@ _.mul = function (v){
     return me;
 };
 
+_.div = function (v){
+    return this.mul(1/v);
+};
+
+
 _.distSquare = function (o){
     o = o || new V2();
     var dx = this.x - o.x;
@@ -62,6 +67,18 @@ _.add = function (x,y){
     }else{
         me.x+=x;
         me.y+=y;
+    }
+    return me;
+};
+
+_.sub = function (x,y){
+    var me = this;
+    if (x instanceof V2){
+        me.x-=x.x;
+        me.y-=x.y;
+    }else{
+        me.x-=x;
+        me.y-=y;
     }
     return me;
 };
