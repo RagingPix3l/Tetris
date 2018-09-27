@@ -13,6 +13,16 @@ function rndColorComponent (){
     return c;
 }
 
+function deg2rad (deg){
+    return (deg*PI)/180;
+}
+
+function rad2deg (rad){
+    return (rad*180)/PI;
+}
+
+
+
 const rndColor = function (){
     var r = rndColorComponent();
     var g = rndColorComponent();

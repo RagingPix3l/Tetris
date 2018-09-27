@@ -345,14 +345,15 @@ function PlayState () {
         this.txt = "Lines: " + me.linesCompleted + " / " + me.linesToGo();
     });
 
-    me.lvlLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 280)}));
+    me.lvlLbl = me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 310)}));
     me.lvlLbl.addUpdateFn(function (g){
         this.txt = "Lvl: " + me.lvl;
     });
 
     me.root.add(new TextLabel({pos:new V2(W*0.5+ 30, 140), txt:"Next:"}));
 
-    me.pauseLabel=  me.root.add(new TextLabel({pos:new V2(W*0.5 - 110, 340), txt:"P A U S E D"}));
+    me.pauseLabel =  me.root.add(new TextLabel({pos:new V2(W*0.5, 390), txt:"P A U S E D"}));
+    me.pauseLabel.pos.x = W*0.75 - me.pauseLabel.dimensions.x*0.5;
 };
 
 _ = chain(PlayState, State);
@@ -364,6 +365,7 @@ _.init = function () {
     me.spawnPreview();
     me.spawnNewGroup();
     me.lastMoveHorizontal = Date.now();
+
 };
 
 _.linesToCompleteOnStart = function (startLevel){
@@ -389,6 +391,8 @@ _.reset = function () {
     me.root.remove(me.mainGrid);
     me.root.remove(me.group);
     me.root.remove(me.groupPreview);
+
+
     me.init();
 };
 

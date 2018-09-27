@@ -61,3 +61,19 @@ function drawSpirograph(ctx,R,r,O){
     } while (x2 != R-O && y2 != 0 );
     ctx.stroke();
 }
+var measureTextDiv = null;
+
+function measureText (txtLabel) {
+    if (measureTextDiv == null){
+        measureTextDiv = document.createElement('div');
+        measureTextDiv.style.position = "absolute";
+        measureTextDiv.style.left = "-2000px";
+        measureTextDiv.style.top = "-2000px";
+        document.body.appendChild(measureTextDiv);
+    };
+
+    measureTextDiv.style.font = txtLabel.fontSize + "px " + txtLabel.font;
+    measureTextDiv.innerText = txtLabel.txt;
+    const rect = measureTextDiv.getBoundingClientRect();
+    return new V2(rect.width,rect.height);
+}
